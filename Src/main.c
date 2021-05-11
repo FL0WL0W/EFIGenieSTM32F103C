@@ -95,7 +95,6 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_Delay(10 * 1000);
   Setup();
   /* USER CODE END 2 */
 
