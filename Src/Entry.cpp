@@ -14,6 +14,9 @@ extern char _config;
 
 extern "C"
 {
+  // int tickDiff = 0;
+  // int maxTickDiff = 0;
+  // int minTickDiff = 0;
   EmbeddedIOServiceCollection _embeddedIOServiceCollection;
   EngineMain *_engineMain;
   void Setup() 
@@ -42,7 +45,8 @@ extern "C"
   }
   void Loop() 
   {
-    const char responseText[21] = "Looping EngineMain\n\r";
+    char responseText[50] = "Looping EngineMain\n\r";
+    //sprintf(responseText, "%d\t:%d\t:\t%d\n\r", minTickDiff, tickDiff, maxTickDiff);
     CDC_Transmit_FS((uint8_t*)responseText, strlen(responseText));
     _engineMain->Loop();
   }
