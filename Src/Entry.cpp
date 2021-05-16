@@ -5,7 +5,9 @@
 #include "Stm32HalAnalogService.h"
 #include "Stm32HalPwmService.h"
 #include "EngineMain.h"
+#include "Variable.h"
 
+using namespace OperationArchitecture;
 using namespace EmbeddedIOServices;
 using namespace Stm32;
 using namespace Engine;
@@ -14,6 +16,9 @@ extern char _config;
 
 extern "C"
 {
+  uint32_t Commands[32];
+  uint8_t CommandReadPointer = 0;
+  bool secondCommand = false;
   EmbeddedIOServiceCollection _embeddedIOServiceCollection;
   EngineMain *_engineMain;
   void Setup() 
@@ -42,8 +47,37 @@ extern "C"
   }
   void Loop() 
   {
-    char responseText[100] = "Looping EngineMain\n\r";
-    CDC_Transmit_FS((uint8_t*)responseText, strlen(responseText));
+    if(Commands[CommandReadPointer] != 0)
+    {
+      std::map<uint32_t, Variable*>::iterator it = _engineMain->SystemBus->Variables.find(Commands[CommandReadPointer]);
+      if (it != _engineMain->SystemBus->Variables.end())
+      {
+        if(it->second->Type == POINTER || it->second->Type == BIGOTHER)
+        {
+          if(Commands[CommandReadPointer + 1] != 0)
+          {
+            CDC_Transmit_FS(((uint8_t *)((uint64_t*)it->second->Value + (Commands[CommandReadPointer + 1] - 1))), sizeof(uint64_t));
+            Commands[CommandReadPointer] = 0;
+            CommandReadPointer++;
+            CommandReadPointer++;
+            CommandReadPointer %= 32;
+            secondCommand = false;
+          }
+          else if(!secondCommand)
+          {
+            CDC_Transmit_FS((uint8_t*)&it->second->Type, sizeof(VariableType));
+            secondCommand = true;
+          }
+        }
+        else
+        {
+          CDC_Transmit_FS((uint8_t*)it->second, sizeof(Variable));
+          Commands[CommandReadPointer] = 0;
+          CommandReadPointer++;
+          CommandReadPointer %= 32;
+        }
+      }
+    }
     _engineMain->Loop();
   }
 }
