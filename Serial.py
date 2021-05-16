@@ -59,7 +59,7 @@ def eleven():
     readBytes = ser.read(8)
     if readBytes[0] != 0 :
         return "True"
-    return false
+    return "False"
   
 def thirteen():
     readBytes = ser.read(8)
