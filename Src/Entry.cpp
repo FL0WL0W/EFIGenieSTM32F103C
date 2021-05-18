@@ -21,6 +21,8 @@ extern "C"
   bool secondCommand = false;
   EmbeddedIOServiceCollection _embeddedIOServiceCollection;
   EngineMain *_engineMain;
+  Variable *loopTime;
+  uint32_t prev;
   void Setup() 
   {
     const char responseText1[34] = "Initializing EmbeddedIOServices\n\r";
@@ -44,6 +46,7 @@ extern "C"
     _engineMain->Setup();
     const char responseText6[19] = "EngineMain Setup\n\r";
     CDC_Transmit_FS((uint8_t*)responseText6, strlen(responseText6));
+    loopTime = _engineMain->SystemBus->GetOrCreateVariable(250);
   }
   void Loop() 
   {
@@ -78,6 +81,9 @@ extern "C"
         }
       }
     }
+    const uint32_t now = _embeddedIOServiceCollection.TimerService->GetTick();
+    loopTime->Set((float)(now-prev) / _embeddedIOServiceCollection.TimerService->GetTicksPerSecond());
+    prev = now;
     _engineMain->Loop();
   }
 }
