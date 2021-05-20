@@ -25,6 +25,18 @@ extern "C"
   uint32_t prev;
   void Setup() 
   {
+    volatile size_t uint8_align = alignof(uint8_t);
+    volatile size_t uint16_align = alignof(uint16_t);
+    volatile size_t uint32_align = alignof(uint32_t);
+    volatile size_t uint64_align = alignof(uint64_t);
+    volatile size_t bool_align = alignof(bool);
+    volatile size_t int8_align = alignof(int8_t);
+    volatile size_t int16_align = alignof(int16_t);
+    volatile size_t int32_align = alignof(int32_t);
+    volatile size_t int64_align = alignof(int64_t);
+    volatile size_t float_align = alignof(float);
+    volatile size_t double_align = alignof(double);
+    
     const char responseText1[34] = "Initializing EmbeddedIOServices\n\r";
     CDC_Transmit_FS((uint8_t*)responseText1, strlen(responseText1));
     _embeddedIOServiceCollection.DigitalService = new Stm32HalDigitalService();
