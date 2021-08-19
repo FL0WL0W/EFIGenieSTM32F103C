@@ -24,8 +24,7 @@ namespace Stm32
 		TIM_OC_InitStruct.Pulse = 0;
 		HAL_TIM_OC_ConfigChannel(&TIM_Handle, &TIM_OC_InitStruct, TIM_CHANNEL_1);
 		
-		//Enable Compare Channel 1 Intterupt
-		__HAL_TIM_ENABLE_IT(&TIM_Handle, TIM_IT_CC1);
+		//Set Compare Channel 1 Intterupt
 		_timCallBack[index] = [this]() { this->TimerInterrupt(); };
 		
 		//set ticks per second
@@ -41,45 +40,42 @@ namespace Stm32
 	void Stm32HalTimerService::Calibrate()
 	{
 		_latency = 0;
-		_minTick = 0;
-		_minTicklatency = 0;
+		_minTicks = 0;
 
-		//factor in latency
-		volatile uint32_t interruptTick;
-		volatile uint32_t latencyTick;
+		//Get Tick Compensation
+		volatile tick_t interruptTick;
+		volatile tick_t latencyTick;
 		interruptTick = this->GetTick();
 		latencyTick = this->GetTick();
-		const uint32_t getTickCompensation = latencyTick - interruptTick;
+		const uint16_t getTickCompensation = latencyTick - interruptTick;
+
+		//setup interrupt
 		_interrupt = [this, &interruptTick]() { interruptTick = this->GetTick(); };
 
-		//get overall latency
-		interruptTick = 0;
-		latencyTick = GetTick() + 10000;
-		ScheduleCallBack(latencyTick);
-		while(interruptTick == 0) ;
-		_latency = interruptTick - latencyTick;
+		//get minimum number of ticks to trigger an interrupt
+		while(true)
+		{
+			_minTicks++;
+			interruptTick = 0;
+			ScheduleCallBack(GetTick());
+			while(TickLessThanTick(GetTick(), _callTick)) ;
+			if(interruptTick != 0)
+				break;
+		}
 
-		//remove overhead latency
+		//get minimum tick to add that schedules far enough in advance
 		interruptTick = 0;
-		latencyTick = GetTick() + 10000;
+		latencyTick = GetTick();
 		ScheduleCallBack(latencyTick);
 		while(interruptTick == 0) ;
-		_latency += interruptTick - latencyTick - getTickCompensation;
-		
-		//set minimum tick
+		const uint16_t minTickAdd = interruptTick - latencyTick - getTickCompensation;
+
+		//get latency
 		interruptTick = 0;
-		latencyTick = GetTick() + 10000;
-		interruptTick = this->GetTick();
-		ScheduleCallBack(latencyTick);
-		latencyTick = this->GetTick();
-		_minTick = latencyTick - interruptTick - getTickCompensation + _latency;
-		
-		//set minimum tick latency
-		interruptTick = 0;
-		latencyTick = GetTick() + _minTick;
+		latencyTick = GetTick() + minTickAdd;
 		ScheduleCallBack(latencyTick);
 		while(interruptTick == 0) ;
-		_minTicklatency = interruptTick - latencyTick - getTickCompensation;
+		_latency = interruptTick - latencyTick - getTickCompensation;
 
 		//set return callback to interface
 		_interrupt = [this]() { this->ReturnCallBack(); };
@@ -87,34 +83,29 @@ namespace Stm32
 		ITimerService::Calibrate();
 	}
 
-	const uint32_t Stm32HalTimerService::GetTick()
+	const tick_t Stm32HalTimerService::GetTick()
 	{
 		return DWT->CYCCNT;
 	}
 
-	void Stm32HalTimerService::ScheduleCallBack(const uint32_t tick)
+	void Stm32HalTimerService::ScheduleCallBack(const tick_t tick)
 	{
-		const uint32_t minTick = tick - _minTick;
-
-		if(TickLessThanTick(minTick, DWT->CYCCNT))
-		{
-			const uint32_t callTick = tick - _minTicklatency;
-			while(TickLessThanTick(DWT->CYCCNT, callTick)) ;
-			_interrupt();
-		}
+		__disable_irq();
+		_callTick = tick - _latency;
+		TIM->DIER |= TIM_IT_CC1;
+		const int ticks = _callTick - DWT->CYCCNT;
+		if(ticks < static_cast<int>(_minTicks))
+			TIM->CCR1 = TIM->CNT + _minTicks;
 		else
-		{
-			const uint32_t callTick = tick == _latency? 1 : tick - _latency;
-			TIM->CCR1 = TIM->CNT + (callTick - DWT->CYCCNT);
-			_callTick = callTick;
-		}
+			TIM->CCR1 = TIM->CNT + ticks;
+		__enable_irq();
 	}
 	
 	void Stm32HalTimerService::TimerInterrupt(void)
 	{
-		if(_callTick != 0 && TickLessThanTick(_callTick, DWT->CYCCNT))
+		if(TickLessThanTick(_callTick - _latency, DWT->CYCCNT))
 		{
-			_callTick = 0;
+			TIM->DIER &= ~TIM_IT_CC1;
 			_interrupt();
 		}
 	}
@@ -124,7 +115,7 @@ namespace Stm32
 		_interrupt = interrupt;
 	}
 
-	const uint32_t Stm32HalTimerService::GetTicksPerSecond()
+	const tick_t Stm32HalTimerService::GetTicksPerSecond()
 	{
 		return _ticksPerSecond;
 	}

@@ -90,10 +90,10 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_USB_DEVICE_Init();
-  MX_ADC1_Init();
-  MX_TIM1_Init();
+  //MX_GPIO_Init();
+  //MX_USB_DEVICE_Init();
+  //MX_ADC1_Init();
+  //MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   Setup();
   /* USER CODE END 2 */

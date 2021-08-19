@@ -23,79 +23,82 @@ extern "C"
   EngineMain *_engineMain;
   Variable *loopTime;
   uint32_t prev;
+  uint16_t degree = 0;
+  uint32_t ticksPerDegree = 1000;
   void Setup() 
   {
-    volatile size_t uint8_align = alignof(uint8_t);
-    volatile size_t uint16_align = alignof(uint16_t);
-    volatile size_t uint32_align = alignof(uint32_t);
-    volatile size_t uint64_align = alignof(uint64_t);
-    volatile size_t bool_align = alignof(bool);
-    volatile size_t int8_align = alignof(int8_t);
-    volatile size_t int16_align = alignof(int16_t);
-    volatile size_t int32_align = alignof(int32_t);
-    volatile size_t int64_align = alignof(int64_t);
-    volatile size_t float_align = alignof(float);
-    volatile size_t double_align = alignof(double);
-    
-    const char responseText1[34] = "Initializing EmbeddedIOServices\n\r";
-    CDC_Transmit_FS((uint8_t*)responseText1, strlen(responseText1));
     _embeddedIOServiceCollection.DigitalService = new Stm32HalDigitalService();
     _embeddedIOServiceCollection.AnalogService = new Stm32HalAnalogService();
     _embeddedIOServiceCollection.TimerService = new Stm32HalTimerService(TimerIndex::Index1);
     _embeddedIOServiceCollection.PwmService = new Stm32HalPwmService();
-    const char responseText2[33] = "EmbeddedIOServices Initialized\n\r";
-    CDC_Transmit_FS((uint8_t*)responseText2, strlen(responseText2));
 
-    const char responseText3[26] = "Initializing EngineMain\n\r";
-    CDC_Transmit_FS((uint8_t*)responseText3, strlen(responseText3));
-		unsigned int _configSize = 0;
-    _engineMain = new EngineMain(reinterpret_cast<void*>(&_config), _configSize, &_embeddedIOServiceCollection);
-    const char responseText4[25] = "EngineMain Initialized\n\r";
-    CDC_Transmit_FS((uint8_t*)responseText4, strlen(responseText4));
 
-    const char responseText5[24] = "Setting Up EngineMain\n\r";
-    CDC_Transmit_FS((uint8_t*)responseText5, strlen(responseText5));
-    _engineMain->Setup();
-    const char responseText6[19] = "EngineMain Setup\n\r";
-    CDC_Transmit_FS((uint8_t*)responseText6, strlen(responseText6));
-    loopTime = _engineMain->SystemBus->GetOrCreateVariable(250);
+    _embeddedIOServiceCollection.DigitalService->InitPin(0, Out);
+    _embeddedIOServiceCollection.DigitalService->InitPin(1, Out);
+    prev = DWT->CYCCNT;
+    __disable_irq();
   }
   void Loop() 
   {
-    if(Commands[CommandReadPointer] != 0)
+
+    uint32_t degree360 = degree % 360;
+    
+    if(degree == 0)
     {
-      std::map<uint32_t, Variable*>::iterator it = _engineMain->SystemBus->Variables.find(Commands[CommandReadPointer]);
-      if (it != _engineMain->SystemBus->Variables.end())
-      {
-        if(it->second->Type == POINTER || it->second->Type == BIGOTHER)
-        {
-          if(Commands[CommandReadPointer + 1] != 0)
-          {
-            CDC_Transmit_FS(((uint8_t *)((uint64_t*)it->second->Value + (Commands[CommandReadPointer + 1] - 1))), sizeof(uint64_t));
-            Commands[CommandReadPointer] = 0;
-            CommandReadPointer++;
-            CommandReadPointer++;
-            CommandReadPointer %= 32;
-            secondCommand = false;
-          }
-          else if(!secondCommand)
-          {
-            CDC_Transmit_FS((uint8_t*)&it->second->Type, sizeof(VariableType));
-            secondCommand = true;
-          }
-        }
-        else
-        {
-          CDC_Transmit_FS((uint8_t*)it->second, sizeof(Variable));
-          Commands[CommandReadPointer] = 0;
-          CommandReadPointer++;
-          CommandReadPointer %= 32;
-        }
-      }
+      while(prev - DWT->CYCCNT < ticksPerDegree) ;
+      _embeddedIOServiceCollection.DigitalService->WritePin(0, true);
+      _embeddedIOServiceCollection.DigitalService->WritePin(1, false);
     }
-    const uint32_t now = _embeddedIOServiceCollection.TimerService->GetTick();
-    loopTime->Set((float)(now-prev) / _embeddedIOServiceCollection.TimerService->GetTicksPerSecond());
-    prev = now;
-    _engineMain->Loop();
+    else if(degree == 360)
+    {
+      while(prev - DWT->CYCCNT < ticksPerDegree) ;
+      _embeddedIOServiceCollection.DigitalService->WritePin(0, false);
+      _embeddedIOServiceCollection.DigitalService->WritePin(1, false);
+    }
+    else if(degree % 15 == 0)
+    {
+      while(prev - DWT->CYCCNT < ticksPerDegree) ;
+      _embeddedIOServiceCollection.DigitalService->WritePin(1, false);
+    }
+    else if(
+      degree360 == 12 ||
+      degree360 == 18 ||
+      degree360 == 33 ||
+      degree360 == 48 ||
+      degree360 == 63 ||
+      degree360 == 78 ||
+      degree360 == 102 ||
+      degree360 == 108 ||
+      degree360 == 123 ||
+      degree360 == 138 ||
+      degree360 == 162 ||
+      degree360 == 177 ||
+      degree360 == 183 ||
+      degree360 == 198 ||
+      degree360 == 222 ||
+      degree360 == 237 ||
+      degree360 == 252 ||
+      degree360 == 258 ||
+      degree360 == 282 ||
+      degree360 == 288 ||
+      degree360 == 312 ||
+      degree360 == 327 ||
+      degree360 == 342 ||
+      degree360 == 357
+      )
+    {
+      while(prev - DWT->CYCCNT < ticksPerDegree) ;
+      _embeddedIOServiceCollection.DigitalService->WritePin(1, true);
+    }
+    else
+    {
+      while(prev - DWT->CYCCNT < ticksPerDegree) ;
+    }
+
+    degree++;
+    if(degree >= 720)
+      degree = 0;
+
+    prev += ticksPerDegree;
   }
 }
