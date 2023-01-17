@@ -1,0 +1,46 @@
+{
+    "version": 2,
+    "configurePresets": [
+        {
+            "name": "Debug STM32F103C8Tx",
+            "displayName": "Debug STM32F103C8Tx",
+            "description": "Sets Ninja generator, build and install directory",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TOOLCHAIN_FILE": "STM32F103C8Tx_Toolchain.cmake"
+            }
+        },{
+            "name": "Release STM32F103C8Tx",
+            "displayName": "Release STM32F103C8Tx",
+            "description": "Sets Ninja generator, build and install directory",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_TOOLCHAIN_FILE": "STM32F103C8Tx_Toolchain_Optimize.cmake"
+            }
+        },{
+            "name": "Debug STM32F103CBTx",
+            "displayName": "Debug STM32F103CBTx",
+            "description": "Sets Ninja generator, build and install directory",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TOOLCHAIN_FILE": "STM32F103CBTx_Toolchain.cmake"
+            }
+        },{
+            "name": "Release STM32F103CBTx",
+            "displayName": "Release STM32F103CBTx",
+            "description": "Sets Ninja generator, build and install directory",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_TOOLCHAIN_FILE": "STM32F103CBTx_Toolchain_Optimize.cmake"
+            }
+        }
+    ]
+}
