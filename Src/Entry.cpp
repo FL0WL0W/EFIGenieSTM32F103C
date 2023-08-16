@@ -100,7 +100,7 @@ extern "C"
       {
         std::memcpy(writeDataDest, writeData, writeDataLength);
       }
-      else if(reinterpret_cast<size_t>(writeDataDest) >= 0x8004000 && reinterpret_cast<size_t>(writeDataDest) <= 0x8008000)
+      else if(reinterpret_cast<size_t>(writeDataDest) >= 0x801E000 && reinterpret_cast<size_t>(writeDataDest) <= 0x8020000)
       {
         HAL_FLASH_Unlock();
         FLASH_OBProgramInitTypeDef pOBInit;
@@ -111,7 +111,7 @@ extern "C"
         HAL_FLASHEx_OBProgram(&pOBInit);
         pOBInit.WRPPage = OB_WRP_PAGES124TO127;
         HAL_FLASHEx_OBProgram(&pOBInit);
-        if(reinterpret_cast<size_t>(writeDataDest) == 0x8004000)
+        if(reinterpret_cast<size_t>(writeDataDest) == 0x801E000)
         {
           FLASH_EraseInitTypeDef pEraseInit;
           pEraseInit.TypeErase = FLASH_TYPEERASE_PAGES;
