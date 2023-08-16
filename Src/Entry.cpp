@@ -62,7 +62,7 @@ extern "C"
 
     _embeddedIOServiceCollection.DigitalService = new Stm32HalDigitalService();
     _embeddedIOServiceCollection.AnalogService = new Stm32HalAnalogService();
-    _embeddedIOServiceCollection.TimerService = new Stm32HalTimerService(TimerIndex::Index2);
+    _embeddedIOServiceCollection.TimerService = new Stm32HalTimerService(TimerIndex::Index1);
     _embeddedIOServiceCollection.PwmService = new Stm32HalPwmService();
 
 		size_t _configSize = 0;
